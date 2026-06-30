@@ -1,10 +1,15 @@
 # Repository Structure
 
-This repo is structured as a monorepo so the public website and admin subdomain can be deployed separately while still sharing database and UI code.
+A single Next.js (App Router) application. The public site and the
+exec-only admin dashboard live in the same app; `/admin` is protected by
+`middleware.ts`, which checks a signed session cookie set after a shared
+password login.
 
-- `apps/web`: public-facing site
-- `apps/admin`: exec-only admin dashboard
-- `packages/db`: shared database access
-- `packages/ui`: shared components
-- `prisma`: PostgreSQL schema and migrations
-- `docs`: design and implementation notes
+- `src/app` — pages and server actions
+  - `src/app/admin` — admin dashboard (event CRUD)
+- `src/db` — Drizzle schema, client, and seed data
+- `src/lib` — auth and formatting helpers
+- `drizzle` — generated SQL migrations
+- `docs` — design and implementation notes
+
+See the root `README.md` for setup and scripts.
