@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { db } from "./index";
-import { events, execs, facts } from "./schema";
+import { events, execs, facts, siteContent } from "./schema";
+import { SITE_CONTENT_DEFAULTS } from "../lib/site-content";
 
 async function main() {
   console.log("Seeding database...");
@@ -32,8 +33,23 @@ async function main() {
     {
       fact: "The oldest known map of the stars dates back over 32,000 years.",
       source: "Various archaeological studies",
+      month: 7,
+    },
+    {
+      fact: "The Library of Alexandria was founded in the early 3rd century BCE.",
+      source: "Various archaeological studies",
+      month: 3,
     },
   ]);
+
+  await db
+    .insert(siteContent)
+    .values(
+      Object.entries(SITE_CONTENT_DEFAULTS).map(([key, value]) => ({
+        key,
+        value,
+      })),
+    );
 
   console.log("Done.");
   process.exit(0);

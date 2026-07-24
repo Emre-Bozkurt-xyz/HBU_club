@@ -2,10 +2,24 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
 
+const title = "History Before Us";
+const description =
+  "A history club exploring the land we live on and the wider world's past.";
+
 export const metadata: Metadata = {
-  title: "History Before Us",
-  description:
-    "A history club exploring the land we live on and the wider world's past.",
+  title,
+  description,
+  openGraph: {
+    title,
+    description,
+    siteName: title,
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+  },
 };
 
 export default function RootLayout({

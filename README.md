@@ -1,7 +1,9 @@
 # History Before Us
 
-Website for the History Before Us club: a public landing page, an events
-board, a team page, and a password-protected admin dashboard to manage events.
+Website for the History Before Us club: a data-driven landing page (intro,
+upcoming events, this month in history, contact info), an events board with
+a past-events archive, a team page, and a password-protected admin dashboard
+to manage events, execs, facts, and site copy.
 
 ## Stack
 
@@ -15,20 +17,31 @@ board, a team page, and a password-protected admin dashboard to manage events.
 ```text
 src/
   app/
-    page.tsx            # landing page
-    events/             # public events board
-    execs/              # team profiles
-    admin/              # password-protected event dashboard
-      login/
-      actions.ts        # server actions (login + event CRUD)
+    page.tsx             # landing page (intro, events preview, monthly facts, contact)
+    icon.svg              # favicon placeholder
+    opengraph-image.tsx   # generated OG/Twitter link-preview image
+    events/               # public events board (upcoming + past archive)
+    execs/                # team profiles
+    admin/
+      login/               # public login page
+      actions.ts           # login/logout server actions
+      delete-button.tsx    # shared client component: confirm() before delete
+      page.tsx             # redirects /admin -> /admin/events
+      (dashboard)/         # nav-wrapped admin sub-pages (route group)
+        layout.tsx          # shared admin nav + sign out
+        events/             # event CRUD (moved from /admin)
+        execs/               # exec CRUD
+        facts/               # fact CRUD (tagged by month)
+        content/             # edit siteContent (intro + contact info)
   db/
-    schema.ts           # Drizzle tables: events, execs, facts
+    schema.ts           # Drizzle tables: events, execs, facts, siteContent
     index.ts            # db client
     seed.ts             # sample data
   lib/
     auth.ts             # password check + signed session cookie
     format.ts           # date helpers
-middleware.ts           # gates everything under /admin
+    site-content.ts     # known siteContent keys + defaulted read helper
+  middleware.ts         # gates everything under /admin (must live in src/)
 drizzle/                # generated SQL migrations
 ```
 
@@ -54,7 +67,7 @@ drizzle/                # generated SQL migrations
 
    ```bash
    npm run db:push     # apply the schema to your database
-   npm run db:seed     # optional: insert sample events
+   npm run db:seed     # optional: insert sample events, execs, facts, content
    ```
 
 5. **Run it.**
@@ -64,7 +77,8 @@ drizzle/                # generated SQL migrations
    ```
 
    - Public site: http://localhost:3000
-   - Admin: http://localhost:3000/admin (log in with `ADMIN_PASSWORD`)
+   - Admin: http://localhost:3000/admin (log in with `ADMIN_PASSWORD`; you'll
+     land on `/admin/events`, with nav for Events, Execs, Facts, and Content)
 
 ## Database scripts
 
