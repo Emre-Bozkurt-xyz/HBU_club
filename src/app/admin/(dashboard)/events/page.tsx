@@ -1,136 +1,129 @@
+import Link from "next/link";
 import { desc } from "drizzle-orm";
+import { ChevronRight, Plus } from "lucide-react";
 import { db } from "@/db";
-import { events, type Event } from "@/db/schema";
-import { formatEventDate, toDateTimeLocal } from "@/lib/format";
-import { DeleteButton } from "../../delete-button";
-import { createEvent, deleteEvent, updateEvent } from "./actions";
+import { chapters, events } from "@/db/schema";
+import { dateBlock, formatTime, zonedParts } from "@/lib/format";
+import { isPast } from "@/lib/queries";
+import {
+  AdminPageHeader,
+  Badge,
+  buttonClass,
+  EmptyState,
+} from "../../_components/ui";
 
-export const dynamic = "force-dynamic";
+const TABS = [
+  { key: "upcoming", label: "Upcoming" },
+  { key: "past", label: "Past" },
+  { key: "drafts", label: "Drafts" },
+] as const;
 
-const inputClass = "w-full rounded-md border border-black/15 px-3 py-2 text-sm";
-
-export default async function AdminEventsPage() {
-  const all = await db.select().from(events).orderBy(desc(events.eventDate));
-
-  return (
-    <div className="space-y-10">
-      <h1 className="text-2xl font-bold tracking-tight">Manage events</h1>
-
-      <section className="rounded-lg border border-black/10 bg-white/50 p-5">
-        <h2 className="mb-4 font-semibold">Add an event</h2>
-        <EventFields action={createEvent} submitLabel="Add event" />
-      </section>
-
-      <section className="space-y-4">
-        <h2 className="font-semibold">
-          All events{" "}
-          <span className="font-normal text-black/50">({all.length})</span>
-        </h2>
-        {all.length === 0 ? (
-          <p className="text-sm text-black/60">No events yet.</p>
-        ) : (
-          <ul className="space-y-3">
-            {all.map((event) => (
-              <li
-                key={event.id}
-                className="rounded-lg border border-black/10 bg-white/50 p-4"
-              >
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="font-medium">{event.title}</span>
-                  <span className="text-sm text-black/50">
-                    {formatEventDate(event.eventDate)}
-                  </span>
-                </div>
-
-                <div className="mt-3 flex gap-4 text-sm">
-                  <details className="flex-1">
-                    <summary className="cursor-pointer text-accent">
-                      Edit
-                    </summary>
-                    <div className="mt-3">
-                      <EventFields
-                        action={updateEvent}
-                        event={event}
-                        submitLabel="Save changes"
-                      />
-                    </div>
-                  </details>
-
-                  <form action={deleteEvent}>
-                    <input type="hidden" name="id" value={event.id} />
-                    <DeleteButton confirmText={`Delete "${event.title}"? This can't be undone.`} />
-                  </form>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
-  );
-}
-
-function EventFields({
-  action,
-  event,
-  submitLabel,
+export default async function AdminEventsPage({
+  searchParams,
 }: {
-  action: (formData: FormData) => void;
-  event?: Event;
-  submitLabel: string;
+  searchParams: Promise<{ tab?: string }>;
 }) {
+  const { tab: tabParam } = await searchParams;
+  const tab = TABS.find((t) => t.key === tabParam)?.key ?? "upcoming";
+  const [all, chapterList] = await Promise.all([
+    db.select().from(events).orderBy(desc(events.eventDate)),
+    db.select({ id: chapters.id, name: chapters.name }).from(chapters),
+  ]);
+  const chapterName = new Map(chapterList.map((c) => [c.id, c.name]));
+
+  const groups = {
+    upcoming: all.filter((e) => e.published && !isPast(e)).reverse(),
+    past: all.filter((e) => e.published && isPast(e)),
+    drafts: all.filter((e) => !e.published),
+  };
+  const list = groups[tab];
+
   return (
-    <form action={action} className="space-y-3">
-      {event && <input type="hidden" name="id" value={event.id} />}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="space-y-1">
-          <span className="text-sm font-medium">Title</span>
-          <input
-            name="title"
-            required
-            defaultValue={event?.title}
-            className={inputClass}
-          />
-        </label>
-        <label className="space-y-1">
-          <span className="text-sm font-medium">Date &amp; time</span>
-          <input
-            name="eventDate"
-            type="datetime-local"
-            required
-            defaultValue={event ? toDateTimeLocal(event.eventDate) : undefined}
-            className={inputClass}
-          />
-        </label>
-        <label className="space-y-1">
-          <span className="text-sm font-medium">Theme</span>
-          <input
-            name="theme"
-            defaultValue={event?.theme ?? ""}
-            className={inputClass}
-          />
-        </label>
-        <label className="space-y-1">
-          <span className="text-sm font-medium">Location</span>
-          <input
-            name="location"
-            defaultValue={event?.location ?? ""}
-            className={inputClass}
-          />
-        </label>
+    <>
+      <AdminPageHeader
+        title="Events"
+        description="Everything on the public events page. Past events stay in the archive — add a recap after each one."
+        actions={
+          <Link href="/admin/events/new" className={buttonClass.primary}>
+            <Plus className="size-4" /> New event
+          </Link>
+        }
+      />
+
+      <div className="mb-5 flex gap-1 border-b border-line">
+        {TABS.map((t) => (
+          <Link
+            key={t.key}
+            href={`/admin/events?tab=${t.key}`}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm ${
+              tab === t.key
+                ? "border-accent font-medium text-ink"
+                : "border-transparent text-muted hover:text-ink"
+            }`}
+          >
+            {t.label}{" "}
+            <span className="text-xs text-muted">({groups[t.key].length})</span>
+          </Link>
+        ))}
       </div>
-      <label className="block space-y-1">
-        <span className="text-sm font-medium">Description</span>
-        <textarea
-          name="description"
-          rows={3}
-          defaultValue={event?.description ?? ""}
-          className={inputClass}
-        />
-      </label>
-      <button className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90">
-        {submitLabel}
-      </button>
-    </form>
+
+      {list.length === 0 ? (
+        <EmptyState
+          title={
+            tab === "upcoming"
+              ? "No upcoming events"
+              : tab === "past"
+                ? "No past events yet"
+                : "No drafts"
+          }
+        >
+          {tab === "upcoming" && (
+            <Link
+              href="/admin/events/new"
+              className="text-accent hover:underline"
+            >
+              Add the next one →
+            </Link>
+          )}
+        </EmptyState>
+      ) : (
+        <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-card">
+          {list.map((event) => {
+            const d = dateBlock(event.eventDate);
+            return (
+              <li key={event.id}>
+                <Link
+                  href={`/admin/events/${event.id}`}
+                  className="flex items-center gap-4 px-4 py-3.5 transition hover:bg-paper/60"
+                >
+                  <div className="w-12 shrink-0 text-center">
+                    <p className="eyebrow text-[10px] text-accent">{d.month}</p>
+                    <p className="font-serif text-2xl leading-none">{d.day}</p>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{event.title}</p>
+                    <p className="truncate text-sm text-muted">
+                      {zonedParts(event.eventDate).year} ·{" "}
+                      {formatTime(event.eventDate, event.endsAt)}
+                      {event.location && ` · ${event.location}`}
+                    </p>
+                  </div>
+                  <div className="hidden shrink-0 gap-1.5 sm:flex">
+                    {event.chapterId && chapterName.get(event.chapterId) && (
+                      <Badge>{chapterName.get(event.chapterId)}</Badge>
+                    )}
+                    {!event.published && <Badge tone="warning">Draft</Badge>}
+                    {isPast(event) && event.published && !event.recap && (
+                      <Badge tone="accent">Needs recap</Badge>
+                    )}
+                  </div>
+                  <ChevronRight className="size-4 shrink-0 text-ink/30" />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </>
   );
 }

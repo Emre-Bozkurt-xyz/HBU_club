@@ -1,11 +1,5 @@
-<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-  <rect width="64" height="64" rx="12" fill="#7c4a2d" />
-  <text
-    x="32"
-    y="44"
-    font-family="Georgia, 'Times New Roman', serif"
-    font-size="34"
-    fill="#faf8f4"
-    text-anchor="middle"
-  >H</text>
+<svg width="64" height="64" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="24" cy="24" r="23" fill="#8a3b24" />
+  <circle cx="24" cy="24" r="19.5" fill="none" stroke="#f5efe3" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="1.5 2.2" />
+  <text x="24" y="31" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="21" fill="#f5efe3">H</text>
 </svg>

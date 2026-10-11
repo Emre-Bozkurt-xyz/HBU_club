@@ -30,7 +30,8 @@ async function sign(value: string, secret: string) {
 function safeEqual(a: string, b: string) {
   if (a.length !== b.length) return false;
   let result = 0;
-  for (let i = 0; i < a.length; i++) result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  for (let i = 0; i < a.length; i++)
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return result === 0;
 }
 
@@ -66,3 +67,15 @@ export async function isValidToken(token: string | undefined) {
 }
 
 export const ADMIN_COOKIE = COOKIE_NAME;
+
+/**
+ * Guard for admin server actions. Middleware only protects admin *pages*;
+ * server actions are plain POST endpoints that can be called from any route,
+ * so every admin action must check the session itself.
+ */
+export async function requireAdmin() {
+  const store = await cookies();
+  if (!(await isValidToken(store.get(COOKIE_NAME)?.value))) {
+    throw new Error("Not signed in.");
+  }
+}

@@ -1,47 +1,100 @@
-import { getSiteContent, SITE_CONTENT_FIELDS } from "@/lib/site-content";
-import { updateSiteContent } from "./actions";
+import { getFaqs, getLinks, getPillars } from "@/lib/queries";
+import { getSiteContent } from "@/lib/site-content";
+import { AdminPageHeader } from "../../_components/ui";
+import {
+  FaqList,
+  LinkList,
+  PillarList,
+  SiteContentForm,
+} from "./content-forms";
 
-export const dynamic = "force-dynamic";
+const SECTIONS = [
+  { id: "text", label: "Home page text" },
+  { id: "links", label: "Contact & social links" },
+  { id: "pillars", label: "What we do" },
+  { id: "faq", label: "FAQ" },
+];
 
-const inputClass = "w-full rounded-md border border-black/15 px-3 py-2 text-sm";
+function SectionTitle({
+  id,
+  title,
+  description,
+}: {
+  id: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div id={id} className="mb-4 scroll-mt-6">
+      <h2 className="font-serif text-2xl">{title}</h2>
+      <p className="mt-1 text-sm text-muted">{description}</p>
+    </div>
+  );
+}
 
 export default async function AdminContentPage() {
-  const content = await getSiteContent();
+  const [values, links, pillars, faqs] = await Promise.all([
+    getSiteContent(),
+    getLinks(),
+    getPillars(),
+    getFaqs(),
+  ]);
 
   return (
-    <div className="space-y-10">
-      <h1 className="text-2xl font-bold tracking-tight">Site content</h1>
-      <p className="text-sm text-black/60">
-        Edit the intro paragraph and contact info shown on the home page.
-      </p>
+    <>
+      <AdminPageHeader
+        title="Site content"
+        description="The words on the home page, your contact links, and the FAQ."
+      />
+      <nav className="mb-10 flex flex-wrap gap-2">
+        {SECTIONS.map((s) => (
+          <a
+            key={s.id}
+            href={`#${s.id}`}
+            className="rounded-full border border-line bg-card px-3 py-1.5 text-sm hover:border-ink/30"
+          >
+            {s.label}
+          </a>
+        ))}
+      </nav>
 
-      <section className="rounded-lg border border-black/10 bg-white/50 p-5">
-        <form action={updateSiteContent} className="space-y-4">
-          {SITE_CONTENT_FIELDS.map((field) => (
-            <label key={field.key} className="block space-y-1">
-              <span className="text-sm font-medium">{field.label}</span>
-              {field.type === "textarea" ? (
-                <textarea
-                  name={field.key}
-                  rows={4}
-                  defaultValue={content[field.key]}
-                  className={inputClass}
-                />
-              ) : (
-                <input
-                  name={field.key}
-                  type={field.type === "email" ? "email" : "text"}
-                  defaultValue={content[field.key]}
-                  className={inputClass}
-                />
-              )}
-            </label>
-          ))}
-          <button className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90">
-            Save changes
-          </button>
-        </form>
-      </section>
-    </div>
+      <div className="max-w-3xl space-y-16">
+        <section>
+          <SectionTitle
+            id="text"
+            title="Home page text"
+            description="The heading, intro, sign-up link, and optional announcement banner."
+          />
+          <SiteContentForm values={values} />
+        </section>
+
+        <section>
+          <SectionTitle
+            id="links"
+            title="Contact & social links"
+            description="Shown in the “Get involved” section and the footer of every page. Chapter-specific contacts go on each chapter."
+          />
+          <LinkList items={links} />
+        </section>
+
+        <section>
+          <SectionTitle
+            id="pillars"
+            title="What we do"
+            description="The numbered cards on the home page. Three works best."
+          />
+          <PillarList items={pillars} />
+        </section>
+
+        <section>
+          <SectionTitle
+            id="faq"
+            title="FAQ"
+            description="Common questions from new members. The section is hidden when empty."
+          />
+          <FaqList items={faqs} />
+        </section>
+      </div>
+    </>
   );
 }

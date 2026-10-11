@@ -1,13 +1,29 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
+
+const display = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-display",
+  axes: ["opsz", "SOFT"],
+});
+
+const body = Inter({
+  subsets: ["latin"],
+  variable: "--font-body",
+});
 
 const title = "History Before Us";
 const description =
-  "A history club exploring the land we live on and the wider world's past.";
+  "A student-led history organization exploring the land we live on and the wider world's past.";
+
+const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
 
 export const metadata: Metadata = {
-  title,
+  metadataBase: productionHost
+    ? new URL(`https://${productionHost}`)
+    : undefined,
+  title: { default: title, template: `%s · ${title}` },
   description,
   openGraph: {
     title,
@@ -28,34 +44,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen flex flex-col">
-        <header className="border-b border-black/10">
-          <nav className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-            <Link href="/" className="font-semibold tracking-tight">
-              History Before Us
-            </Link>
-            <div className="flex gap-6 text-sm">
-              <Link href="/events" className="hover:text-accent">
-                Events
-              </Link>
-              <Link href="/execs" className="hover:text-accent">
-                Team
-              </Link>
-            </div>
-          </nav>
-        </header>
-
-        <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
-          {children}
-        </main>
-
-        <footer className="border-t border-black/10">
-          <div className="mx-auto max-w-5xl px-6 py-6 text-sm text-black/50">
-            © {new Date().getFullYear()} History Before Us
-          </div>
-        </footer>
-      </body>
+    <html lang="en" className={`${display.variable} ${body.variable}`}>
+      <body className="min-h-screen">{children}</body>
     </html>
   );
 }

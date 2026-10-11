@@ -1,20 +1,96 @@
 @import "tailwindcss";
 
 :root {
-  --background: #faf8f4;
-  --foreground: #1c1a17;
-  --accent: #7c4a2d;
+  --paper: #f5efe3;
+  --paper-deep: #ece3d1;
+  --card: #fffcf6;
+  --ink: #1f1a14;
+  --muted: #6b6052;
+  --line: #ddd2bd;
+  --accent: #8a3b24;
+  --accent-ink: #6e2d1a;
+  --gold: #b8893a;
+  --night: #1d1a17;
+  --night-ink: #f3ead8;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-paper: var(--paper);
+  --color-paper-deep: var(--paper-deep);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
   --color-accent: var(--accent);
-  --font-sans: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+  --color-accent-ink: var(--accent-ink);
+  --color-gold: var(--gold);
+  --color-night: var(--night);
+  --color-night-ink: var(--night-ink);
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-display), ui-serif, Georgia, serif;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--paper);
+  color: var(--ink);
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--gold) 35%, transparent);
+}
+
+/* Small caps label used for eyebrows and metadata. */
+.eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Faint paper grain on the page background. */
+.paper-grain {
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--ink) 5%, transparent) 0.6px,
+    transparent 0.6px
+  );
+  background-size: 7px 7px;
+}
+
+/* Markdown output. */
+.prose-hbu > * + * {
+  margin-top: 0.85em;
+}
+.prose-hbu a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.prose-hbu ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.prose-hbu ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+.prose-hbu strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+.prose-hbu blockquote {
+  border-left: 3px solid var(--gold);
+  padding-left: 1rem;
+  font-style: italic;
+}
+.prose-invert a {
+  color: var(--gold);
+}
+.prose-invert strong {
+  color: var(--night-ink);
 }

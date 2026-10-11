@@ -1,142 +1,158 @@
-import { asc } from "drizzle-orm";
+import Link from "next/link";
+import { ChevronRight, Plus } from "lucide-react";
 import { db } from "@/db";
-import { facts, type Fact } from "@/db/schema";
-import { DeleteButton } from "../../delete-button";
-import { createFact, deleteFact, updateFact } from "./actions";
+import { facts } from "@/db/schema";
+import { excerpt } from "@/components/markdown";
+import { formatHistoricalDate, MONTH_NAMES, today } from "@/lib/format";
+import { sortChronologically } from "@/lib/queries";
+import {
+  AdminPageHeader,
+  Badge,
+  buttonClass,
+  EmptyState,
+} from "../../_components/ui";
 
-export const dynamic = "force-dynamic";
-
-const inputClass = "w-full rounded-md border border-black/15 px-3 py-2 text-sm";
-
-const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
-
-export default async function AdminFactsPage() {
-  const all = await db.select().from(facts).orderBy(asc(facts.month));
-
-  return (
-    <div className="space-y-10">
-      <h1 className="text-2xl font-bold tracking-tight">Manage facts</h1>
-
-      <section className="rounded-lg border border-black/10 bg-white/50 p-5">
-        <h2 className="mb-4 font-semibold">Add a fact</h2>
-        <FactFields action={createFact} submitLabel="Add fact" />
-      </section>
-
-      <section className="space-y-4">
-        <h2 className="font-semibold">
-          All facts{" "}
-          <span className="font-normal text-black/50">({all.length})</span>
-        </h2>
-        {all.length === 0 ? (
-          <p className="text-sm text-black/60">No facts yet.</p>
-        ) : (
-          <ul className="space-y-3">
-            {all.map((fact) => (
-              <li
-                key={fact.id}
-                className="rounded-lg border border-black/10 bg-white/50 p-4"
-              >
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="font-medium">
-                    {MONTH_NAMES[fact.month - 1]}
-                  </span>
-                </div>
-                <p className="mt-1 text-sm text-black/70">{fact.fact}</p>
-
-                <div className="mt-3 flex gap-4 text-sm">
-                  <details className="flex-1">
-                    <summary className="cursor-pointer text-accent">
-                      Edit
-                    </summary>
-                    <div className="mt-3">
-                      <FactFields
-                        action={updateFact}
-                        fact={fact}
-                        submitLabel="Save changes"
-                      />
-                    </div>
-                  </details>
-
-                  <form action={deleteFact}>
-                    <input type="hidden" name="id" value={fact.id} />
-                    <DeleteButton confirmText="Delete this fact? This can't be undone." />
-                  </form>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
-  );
-}
-
-function FactFields({
-  action,
-  fact,
-  submitLabel,
+export default async function AdminFactsPage({
+  searchParams,
 }: {
-  action: (formData: FormData) => void;
-  fact?: Fact;
-  submitLabel: string;
+  searchParams: Promise<{ month?: string }>;
 }) {
+  const { month: monthParam } = await searchParams;
+  const all = await db.select().from(facts);
+  const currentMonth = today().month;
+  const filterMonth =
+    monthParam === "none"
+      ? "none"
+      : Number(monthParam) >= 1 && Number(monthParam) <= 12
+        ? Number(monthParam)
+        : null;
+
+  const counts = MONTH_NAMES.map(
+    (_, i) => all.filter((f) => f.month === i + 1 && f.published).length,
+  );
+  const noMonth = all.filter((f) => !f.month).length;
+  const list = sortChronologically(
+    filterMonth === null
+      ? all
+      : filterMonth === "none"
+        ? all.filter((f) => !f.month)
+        : all.filter((f) => f.month === filterMonth),
+  );
+
+  const newHref =
+    typeof filterMonth === "number"
+      ? `/admin/facts/new?month=${filterMonth}`
+      : "/admin/facts/new";
+
   return (
-    <form action={action} className="space-y-3">
-      {fact && <input type="hidden" name="id" value={fact.id} />}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="space-y-1">
-          <span className="text-sm font-medium">Month</span>
-          <select
-            name="month"
-            required
-            defaultValue={fact?.month ?? ""}
-            className={inputClass}
-          >
-            <option value="" disabled>
-              Select a month
-            </option>
-            {MONTH_NAMES.map((name, index) => (
-              <option key={name} value={index + 1}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="space-y-1">
-          <span className="text-sm font-medium">Source</span>
-          <input
-            name="source"
-            defaultValue={fact?.source ?? ""}
-            className={inputClass}
-          />
-        </label>
-      </div>
-      <label className="block space-y-1">
-        <span className="text-sm font-medium">Fact</span>
-        <textarea
-          name="fact"
-          rows={3}
-          required
-          defaultValue={fact?.fact}
-          className={inputClass}
-        />
-      </label>
-      <button className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90">
-        {submitLabel}
-      </button>
-    </form>
+    <>
+      <AdminPageHeader
+        title="History facts"
+        description="Facts power the “Today in history” section of the home page and the public timeline. Aim for a few in every month so the home page always has something current."
+        actions={
+          <Link href={newHref} className={buttonClass.primary}>
+            <Plus className="size-4" /> Add fact
+          </Link>
+        }
+      />
+
+      <section className="mb-8">
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-12">
+          {MONTH_NAMES.map((name, i) => {
+            const month = i + 1;
+            const count = counts[i];
+            const active = filterMonth === month;
+            return (
+              <Link
+                key={name}
+                href={active ? "/admin/facts" : `/admin/facts?month=${month}`}
+                className={`rounded-lg border px-2 py-2.5 text-center transition ${
+                  active
+                    ? "border-ink bg-ink text-paper"
+                    : count === 0
+                      ? "border-dashed border-amber-400 bg-amber-50 hover:border-amber-600"
+                      : "border-line bg-card hover:border-ink/30"
+                } ${month === currentMonth && !active ? "ring-2 ring-accent/40" : ""}`}
+                title={`${count} published fact${count === 1 ? "" : "s"} in ${name}`}
+              >
+                <p
+                  className={`text-xs ${active ? "text-paper/70" : "text-muted"}`}
+                >
+                  {name.slice(0, 3)}
+                </p>
+                <p className="font-serif text-xl leading-tight">{count}</p>
+              </Link>
+            );
+          })}
+        </div>
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+          <span>
+            <span className="mr-1 inline-block size-2.5 rounded-sm border border-dashed border-amber-400 bg-amber-50 align-middle" />
+            Empty month — the home page will fall back to a fact from another
+            month
+          </span>
+          {noMonth > 0 && (
+            <Link
+              href="/admin/facts?month=none"
+              className="underline underline-offset-2 hover:text-ink"
+            >
+              {noMonth} without a month
+            </Link>
+          )}
+          {filterMonth !== null && (
+            <Link
+              href="/admin/facts"
+              className="underline underline-offset-2 hover:text-ink"
+            >
+              Show all
+            </Link>
+          )}
+        </div>
+      </section>
+
+      {list.length === 0 ? (
+        <EmptyState
+          title={
+            typeof filterMonth === "number"
+              ? `No facts for ${MONTH_NAMES[filterMonth - 1]} yet`
+              : "No facts yet"
+          }
+        >
+          <Link href={newHref} className="text-accent hover:underline">
+            Add one →
+          </Link>
+        </EmptyState>
+      ) : (
+        <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-card">
+          {list.map((fact) => (
+            <li key={fact.id}>
+              <Link
+                href={`/admin/facts/${fact.id}`}
+                className="flex items-center gap-4 px-4 py-3.5 transition hover:bg-paper/60"
+              >
+                <div className="w-36 shrink-0 text-sm font-medium text-accent">
+                  {formatHistoricalDate(fact) || "Undated"}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">
+                    {fact.title || excerpt(fact.fact, 90)}
+                  </p>
+                  {fact.title && (
+                    <p className="truncate text-sm text-muted">
+                      {excerpt(fact.fact, 120)}
+                    </p>
+                  )}
+                </div>
+                <div className="hidden shrink-0 gap-1.5 sm:flex">
+                  {fact.region && <Badge>{fact.region}</Badge>}
+                  {!fact.published && <Badge tone="warning">Hidden</Badge>}
+                </div>
+                <ChevronRight className="size-4 shrink-0 text-ink/30" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
   );
 }
